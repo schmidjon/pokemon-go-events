@@ -33,6 +33,9 @@ A [TRMNL](https://trmnl.com) e-ink display plugin that shows the Pokémon GO eve
 
 ## Install
 
+### NOW LIVE IN THE OFFICIAL TRMNL PLUGINS!
+[Click here to add the plugin](https://trmnl.com/recipes/pokemon-go-events-517332?via=search)
+
 **Option A: import the zip.** Build it from `src/` (the zip isn't committed):
 
 ```bash
