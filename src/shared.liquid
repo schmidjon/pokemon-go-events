@@ -1,0 +1,202 @@
+{%- comment -%}
+  Shared logic, prepended to every layout.
+  The polled feed is a JSON array, which TRMNL exposes as `data`.
+  Times without a trailing "Z" are local to the player; times with "Z" are UTC.
+  Produces two sorted arrays of rows, `active` and `upcoming`.
+  Each row is "sortkey~~name~~heading~~when~~tip~~images"; split it on "~~".
+  `images` is ready-to-print HTML for the Pokémon the event features.
+{%- endcomment -%}
+{%- assign cf = trmnl.plugin_settings.custom_fields_values -%}
+{%- assign now = "now" | date: "%s" | plus: 0 -%}
+{%- assign offset = trmnl.user.utc_offset | default: 0 | plus: 0 -%}
+{%- assign horizon_days = cf.horizon_days | default: 14 | plus: 0 -%}
+{%- if horizon_days < 1 -%}{%- assign horizon_days = 14 -%}{%- endif -%}
+{%- assign horizon = horizon_days | times: 86400 | plus: now -%}
+{%- capture hidden -%},{{ cf.hide_types | join: "," | remove: " " }},{%- endcapture -%}
+{%- comment -%} Species slugs in National Dex order, so forloop.index is the dex number. {%- endcomment -%}
+{%- assign poke_names = "bulbasaur,ivysaur,venusaur,charmander,charmeleon,charizard,squirtle,wartortle,blastoise,caterpie,metapod,butterfree,weedle,kakuna,beedrill,pidgey,pidgeotto,pidgeot,rattata,raticate,spearow,fearow,ekans,arbok,pikachu,raichu,sandshrew,sandslash,nidoran-f,nidorina,nidoqueen,nidoran-m,nidorino,nidoking,clefairy,clefable,vulpix,ninetales,jigglypuff,wigglytuff,zubat,golbat,oddish,gloom,vileplume,paras,parasect,venonat,venomoth,diglett,dugtrio,meowth,persian,psyduck,golduck,mankey,primeape,growlithe,arcanine,poliwag,poliwhirl,poliwrath,abra,kadabra,alakazam,machop,machoke,machamp,bellsprout,weepinbell,victreebel,tentacool,tentacruel,geodude,graveler,golem,ponyta,rapidash,slowpoke,slowbro,magnemite,magneton,farfetchd,doduo,dodrio,seel,dewgong,grimer,muk,shellder,cloyster,gastly,haunter,gengar,onix,drowzee,hypno,krabby,kingler,voltorb,electrode,exeggcute,exeggutor,cubone,marowak,hitmonlee,hitmonchan,lickitung,koffing,weezing,rhyhorn,rhydon,chansey,tangela,kangaskhan,horsea,seadra,goldeen,seaking,staryu,starmie,mr-mime,scyther,jynx,electabuzz,magmar,pinsir,tauros,magikarp,gyarados,lapras,ditto,eevee,vaporeon,jolteon,flareon,porygon,omanyte,omastar,kabuto,kabutops,aerodactyl,snorlax,articuno,zapdos,moltres,dratini,dragonair,dragonite,mewtwo,mew,chikorita,bayleef,meganium,cyndaquil,quilava,typhlosion,totodile,croconaw,feraligatr,sentret,furret,hoothoot,noctowl,ledyba,ledian,spinarak,ariados,crobat,chinchou,lanturn,pichu,cleffa,igglybuff,togepi,togetic,natu,xatu,mareep,flaaffy,ampharos,bellossom,marill,azumarill,sudowoodo,politoed,hoppip,skiploom,jumpluff,aipom,sunkern,sunflora,yanma,wooper,quagsire,espeon,umbreon,murkrow,slowking,misdreavus,unown,wobbuffet,girafarig,pineco,forretress,dunsparce,gligar,steelix,snubbull,granbull,qwilfish,scizor,shuckle,heracross,sneasel,teddiursa,ursaring,slugma,magcargo,swinub,piloswine,corsola,remoraid,octillery,delibird,mantine,skarmory,houndour,houndoom,kingdra,phanpy,donphan,porygon2,stantler,smeargle,tyrogue,hitmontop,smoochum,elekid,magby,miltank,blissey,raikou,entei,suicune,larvitar,pupitar,tyranitar,lugia,ho-oh,celebi,treecko,grovyle,sceptile,torchic,combusken,blaziken,mudkip,marshtomp,swampert,poochyena,mightyena,zigzagoon,linoone,wurmple,silcoon,beautifly,cascoon,dustox,lotad,lombre,ludicolo,seedot,nuzleaf,shiftry,taillow,swellow,wingull,pelipper,ralts,kirlia,gardevoir,surskit,masquerain,shroomish,breloom,slakoth,vigoroth,slaking,nincada,ninjask,shedinja,whismur,loudred,exploud,makuhita,hariyama,azurill,nosepass,skitty,delcatty,sableye,mawile,aron,lairon,aggron,meditite,medicham,electrike,manectric,plusle,minun,volbeat,illumise,roselia,gulpin,swalot,carvanha,sharpedo,wailmer,wailord,numel,camerupt,torkoal,spoink,grumpig,spinda,trapinch,vibrava,flygon,cacnea,cacturne,swablu,altaria,zangoose,seviper,lunatone,solrock,barboach,whiscash,corphish,crawdaunt,baltoy,claydol,lileep,cradily,anorith,armaldo,feebas,milotic,castform,kecleon,shuppet,banette,duskull,dusclops,tropius,chimecho,absol,wynaut,snorunt,glalie,spheal,sealeo,walrein,clamperl,huntail,gorebyss,relicanth,luvdisc,bagon,shelgon,salamence,beldum,metang,metagross,regirock,regice,registeel,latias,latios,kyogre,groudon,rayquaza,jirachi,deoxys,turtwig,grotle,torterra,chimchar,monferno,infernape,piplup,prinplup,empoleon,starly,staravia,staraptor,bidoof,bibarel,kricketot,kricketune,shinx,luxio,luxray,budew,roserade,cranidos,rampardos,shieldon,bastiodon,burmy,wormadam,mothim,combee,vespiquen,pachirisu,buizel,floatzel,cherubi,cherrim,shellos,gastrodon,ambipom,drifloon,drifblim,buneary,lopunny,mismagius,honchkrow,glameow,purugly,chingling,stunky,skuntank,bronzor,bronzong,bonsly,mime-jr,happiny,chatot,spiritomb,gible,gabite,garchomp,munchlax,riolu,lucario,hippopotas,hippowdon,skorupi,drapion,croagunk,toxicroak,carnivine,finneon,lumineon,mantyke,snover,abomasnow,weavile,magnezone,lickilicky,rhyperior,tangrowth,electivire,magmortar,togekiss,yanmega,leafeon,glaceon,gliscor,mamoswine,porygon-z,gallade,probopass,dusknoir,froslass,rotom,uxie,mesprit,azelf,dialga,palkia,heatran,regigigas,giratina,cresselia,phione,manaphy,darkrai,shaymin,arceus,victini,snivy,servine,serperior,tepig,pignite,emboar,oshawott,dewott,samurott,patrat,watchog,lillipup,herdier,stoutland,purrloin,liepard,pansage,simisage,pansear,simisear,panpour,simipour,munna,musharna,pidove,tranquill,unfezant,blitzle,zebstrika,roggenrola,boldore,gigalith,woobat,swoobat,drilbur,excadrill,audino,timburr,gurdurr,conkeldurr,tympole,palpitoad,seismitoad,throh,sawk,sewaddle,swadloon,leavanny,venipede,whirlipede,scolipede,cottonee,whimsicott,petilil,lilligant,basculin,sandile,krokorok,krookodile,darumaka,darmanitan,maractus,dwebble,crustle,scraggy,scrafty,sigilyph,yamask,cofagrigus,tirtouga,carracosta,archen,archeops,trubbish,garbodor,zorua,zoroark,minccino,cinccino,gothita,gothorita,gothitelle,solosis,duosion,reuniclus,ducklett,swanna,vanillite,vanillish,vanilluxe,deerling,sawsbuck,emolga,karrablast,escavalier,foongus,amoonguss,frillish,jellicent,alomomola,joltik,galvantula,ferroseed,ferrothorn,klink,klang,klinklang,tynamo,eelektrik,eelektross,elgyem,beheeyem,litwick,lampent,chandelure,axew,fraxure,haxorus,cubchoo,beartic,cryogonal,shelmet,accelgor,stunfisk,mienfoo,mienshao,druddigon,golett,golurk,pawniard,bisharp,bouffalant,rufflet,braviary,vullaby,mandibuzz,heatmor,durant,deino,zweilous,hydreigon,larvesta,volcarona,cobalion,terrakion,virizion,tornadus,thundurus,reshiram,zekrom,landorus,kyurem,keldeo,meloetta,genesect,chespin,quilladin,chesnaught,fennekin,braixen,delphox,froakie,frogadier,greninja,bunnelby,diggersby,fletchling,fletchinder,talonflame,scatterbug,spewpa,vivillon,litleo,pyroar,flabebe,floette,florges,skiddo,gogoat,pancham,pangoro,furfrou,espurr,meowstic,honedge,doublade,aegislash,spritzee,aromatisse,swirlix,slurpuff,inkay,malamar,binacle,barbaracle,skrelp,dragalge,clauncher,clawitzer,helioptile,heliolisk,tyrunt,tyrantrum,amaura,aurorus,sylveon,hawlucha,dedenne,carbink,goomy,sliggoo,goodra,klefki,phantump,trevenant,pumpkaboo,gourgeist,bergmite,avalugg,noibat,noivern,xerneas,yveltal,zygarde,diancie,hoopa,volcanion,rowlet,dartrix,decidueye,litten,torracat,incineroar,popplio,brionne,primarina,pikipek,trumbeak,toucannon,yungoos,gumshoos,grubbin,charjabug,vikavolt,crabrawler,crabominable,oricorio,cutiefly,ribombee,rockruff,lycanroc,wishiwashi,mareanie,toxapex,mudbray,mudsdale,dewpider,araquanid,fomantis,lurantis,morelull,shiinotic,salandit,salazzle,stufful,bewear,bounsweet,steenee,tsareena,comfey,oranguru,passimian,wimpod,golisopod,sandygast,palossand,pyukumuku,type-null,silvally,minior,komala,turtonator,togedemaru,mimikyu,bruxish,drampa,dhelmise,jangmo-o,hakamo-o,kommo-o,tapu-koko,tapu-lele,tapu-bulu,tapu-fini,cosmog,cosmoem,solgaleo,lunala,nihilego,buzzwole,pheromosa,xurkitree,celesteela,kartana,guzzlord,necrozma,magearna,marshadow,poipole,naganadel,stakataka,blacephalon,zeraora,meltan,melmetal,grookey,thwackey,rillaboom,scorbunny,raboot,cinderace,sobble,drizzile,inteleon,skwovet,greedent,rookidee,corvisquire,corviknight,blipbug,dottler,orbeetle,nickit,thievul,gossifleur,eldegoss,wooloo,dubwool,chewtle,drednaw,yamper,boltund,rolycoly,carkol,coalossal,applin,flapple,appletun,silicobra,sandaconda,cramorant,arrokuda,barraskewda,toxel,toxtricity,sizzlipede,centiskorch,clobbopus,grapploct,sinistea,polteageist,hatenna,hattrem,hatterene,impidimp,morgrem,grimmsnarl,obstagoon,perrserker,cursola,sirfetchd,mr-rime,runerigus,milcery,alcremie,falinks,pincurchin,snom,frosmoth,stonjourner,eiscue,indeedee,morpeko,cufant,copperajah,dracozolt,arctozolt,dracovish,arctovish,duraludon,dreepy,drakloak,dragapult,zacian,zamazenta,eternatus,kubfu,urshifu,zarude,regieleki,regidrago,glastrier,spectrier,calyrex,wyrdeer,kleavor,ursaluna,basculegion,sneasler,overqwil,enamorus,sprigatito,floragato,meowscarada,fuecoco,crocalor,skeledirge,quaxly,quaxwell,quaquaval,lechonk,oinkologne,tarountula,spidops,nymble,lokix,pawmi,pawmo,pawmot,tandemaus,maushold,fidough,dachsbun,smoliv,dolliv,arboliva,squawkabilly,nacli,naclstack,garganacl,charcadet,armarouge,ceruledge,tadbulb,bellibolt,wattrel,kilowattrel,maschiff,mabosstiff,shroodle,grafaiai,bramblin,brambleghast,toedscool,toedscruel,klawf,capsakid,scovillain,rellor,rabsca,flittle,espathra,tinkatink,tinkatuff,tinkaton,wiglett,wugtrio,bombirdier,finizen,palafin,varoom,revavroom,cyclizar,orthworm,glimmet,glimmora,greavard,houndstone,flamigo,cetoddle,cetitan,veluza,dondozo,tatsugiri,annihilape,clodsire,farigiraf,dudunsparce,kingambit,great-tusk,scream-tail,brute-bonnet,flutter-mane,slither-wing,sandy-shocks,iron-treads,iron-bundle,iron-hands,iron-jugulis,iron-moth,iron-thorns,frigibax,arctibax,baxcalibur,gimmighoul,gholdengo,wo-chien,chien-pao,ting-lu,chi-yu,roaring-moon,iron-valiant,koraidon,miraidon,walking-wake,iron-leaves,dipplin,poltchageist,sinistcha,okidogi,munkidori,fezandipiti,ogerpon,archaludon,hydrapple,gouging-fire,raging-bolt,iron-boulder,iron-crown,terapagos,pecharunt" | split: "," -%}
+{%- assign art_base = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/" -%}
+{%- assign pokeball = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PGcgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDAwIiBzdHJva2Utd2lkdGg9IjIiPjxjaXJjbGUgY3g9IjEyIiBjeT0iMTIiIHI9IjEwIi8+PHBhdGggZD0iTTIgMTJoN202IDBoNyIvPjxjaXJjbGUgY3g9IjEyIiBjeT0iMTIiIHI9IjMiLz48L2c+PC9zdmc+" -%}
+{%- assign active_rows = "" -%}
+{%- assign upcoming_rows = "" -%}
+
+{%- for e in data -%}
+  {%- if e.start == nil or e.end == nil -%}{%- continue -%}{%- endif -%}
+  {%- capture type_key -%},{{ e.eventType }},{%- endcapture -%}
+  {%- if hidden contains type_key -%}{%- continue -%}{%- endif -%}
+
+  {%- assign s = e.start | date: "%s" | plus: 0 -%}
+  {%- assign t = e.end | date: "%s" | plus: 0 -%}
+  {%- unless e.start contains "Z" -%}{%- assign s = s | minus: offset -%}{%- endunless -%}
+  {%- unless e.end contains "Z" -%}{%- assign t = t | minus: offset -%}{%- endunless -%}
+  {%- if t <= now or s > horizon -%}{%- continue -%}{%- endif -%}
+
+  {%- if s <= now -%}
+    {%- assign is_active = true -%}
+    {%- assign key = t -%}
+  {%- else -%}
+    {%- assign is_active = false -%}
+    {%- assign key = s -%}
+  {%- endif -%}
+  {%- assign delta = key | minus: now -%}
+
+  {%- assign d_days = delta | divided_by: 86400 -%}
+  {%- assign d_hours = delta | modulo: 86400 | divided_by: 3600 -%}
+  {%- assign d_mins = delta | modulo: 3600 | divided_by: 60 -%}
+  {%- capture span -%}
+    {%- if d_days > 0 -%}{{ d_days }}d {{ d_hours }}h{%- elsif d_hours > 0 -%}{{ d_hours }}h {{ d_mins }}m{%- else -%}{{ d_mins }}m{%- endif -%}
+  {%- endcapture -%}
+
+  {%- assign local_key = key | plus: offset -%}
+  {%- capture when -%}
+    {%- if is_active -%}
+      Ends in {{ span }}
+    {%- elsif d_days < 6 -%}
+      {{ local_key | date: "%a %-l:%M%P" }} · in {{ span }}
+    {%- else -%}
+      {{ local_key | date: "%a %b %-d, %-l:%M%P" }}
+    {%- endif -%}
+  {%- endcapture -%}
+
+  {%- capture tip -%}
+    {%- case e.eventType -%}
+      {%- when "community-day" -%}
+        {%- assign mon = e.extraData.communityday.spawns.first.name | default: "the featured Pokémon" -%}
+        Clear storage, stock balls, Lucky Egg + Star Piece. Save {{ mon }} candy to evolve before it ends.
+      {%- when "pokemon-spotlight-hour" -%}
+        {%- assign bonus = e.extraData.spotlight.bonus | default: "" -%}
+        {%- if bonus contains "Stardust" -%}
+          Pop a Star Piece at the start; carry plenty of Poké Balls.
+        {%- elsif bonus contains "Evolution" or bonus contains "Evolve" -%}
+          Hoard candy for evolutions and use a Lucky Egg.
+        {%- elsif bonus contains "XP" -%}
+          Use a Lucky Egg and Nanab berries for quick catches.
+        {%- elsif bonus contains "Transfer" -%}
+          Save up Pokémon to transfer during the hour.
+        {%- elsif bonus contains "Candy" -%}
+          Stock Pinap Berries to stack the candy bonus.
+        {%- else -%}
+          Restock Poké Balls and clear storage beforehand.
+        {%- endif -%}
+      {%- when "raid-hour" -%}
+        Gather a group or invite friends; heal and pre-build a counter team.
+      {%- when "raid-battles" -%}
+        {%- if e.name contains "Shadow" -%}
+          Hold Purified Gems and Max Revives; Shadow raids need a solid group.
+        {%- elsif e.name contains "Mega" -%}
+          Bring a matching Mega for bonus candy; Mega Energy adds up.
+        {%- else -%}
+          Spin a gym daily for your free pass; set up a counter team.
+        {%- endif -%}
+      {%- when "raid-day" -%}
+        Spin gyms for extra free passes. Stock Max Revives and potions.
+      {%- when "max-battles" -%}
+        Fill up on Max Particles at Power Spots; power up Dynamax counters.
+      {%- when "max-mondays" -%}
+        Collect Max Particles over the weekend; find a Power Spot group.
+      {%- when "go-battle-league" -%}
+        Build and test teams for the new cups before rating sets in.
+      {%- when "go-pass" -%}
+        Finish the daily GO Pass tasks and claim rewards before it ends.
+      {%- when "pokemon-go-tour" or "wild-area" or "city-safari" or "safari-zone" or "pokemon-go-fest" -%}
+        {%- if e.name contains "Global" -%}
+          Grab the ticket early, clear storage, stock Incense and balls.
+        {%- else -%}
+          Ticketed, in person: plan your route, pack a battery and water.
+        {%- endif -%}
+      {%- when "elite-raids" -%}
+        In person only: arrive early with a group and a ready team.
+      {%- when "go-rocket-takeover" or "team-go-rocket" -%}
+        Heal up, grab a Rocket Radar, and spin stops for Grunts.
+      {%- when "pokestop-showcase" -%}
+        Hunt big (XXL) examples of the featured species.
+      {%- when "twitch-drops" -%}
+        Link your Twitch and Pokémon GO accounts before the stream.
+      {%- when "season" -%}
+        Check the new spawns, egg pools, and seasonal bonuses.
+      {%- when "research" or "special-research" or "timed-research" or "limited-research" -%}
+        Claim the research now and finish it before the deadline.
+      {%- else -%}
+        {%- if e.extraData.generic.hasFieldResearchTasks -%}
+          Spin PokéStops for event Field Research; clear item storage.
+        {%- elsif e.extraData.generic.hasSpawns -%}
+          Clear Pokémon storage and save Incense for the event spawns.
+        {%- else -%}
+          Clear storage and check bonuses on LeekDuck.
+        {%- endif -%}
+    {%- endcase -%}
+  {%- endcapture -%}
+
+  {%- comment -%}
+    Featured Pokémon: use the feed's own icons when it lists them (raid bosses,
+    Spotlight, Community Day); otherwise find species named in the headline.
+  {%- endcomment -%}
+  {%- assign xd = e.extraData -%}
+  {%- assign feed_mons = xd.raidbattles.bosses | default: xd.spotlight.list | default: xd.communityday.spawns -%}
+  {%- capture srcs -%}
+    {%- for m in feed_mons limit: 3 -%}{{ m.image }},{%- endfor -%}
+  {%- endcapture -%}
+  {%- if srcs == "" -%}
+    {%- capture hay -%}-{{ e.name | downcase | replace: "é", "e" | remove: "." | remove: "'" | remove: "’" | replace: " ", "-" | replace: "(", "-" | replace: ")", "-" | replace: ",", "-" | replace: ":", "-" | replace: "&", "-" | replace: "|", "-" | replace: "/", "-" }}-{%- endcapture -%}
+    {%- assign found = 0 -%}
+    {%- capture srcs -%}
+      {%- for slug in poke_names -%}
+        {%- capture needle -%}-{{ slug }}-{%- endcapture -%}
+        {%- if hay contains needle -%}
+          {{ art_base }}{{ forloop.index }}.png,
+          {%- assign found = found | plus: 1 -%}
+          {%- if found >= 3 -%}{%- break -%}{%- endif -%}
+        {%- endif -%}
+      {%- endfor -%}
+    {%- endcapture -%}
+  {%- endif -%}
+  {%- assign src_list = srcs | split: "," -%}
+  {%- capture imgs -%}
+    {%- if src_list.size == 0 -%}
+      <img class="image image--adaptive w--8 h--8" src="{{ pokeball }}" alt="">
+    {%- elsif src_list.size == 1 -%}
+      <img class="image image-dither image--contain w--12 h--12" src="{{ src_list.first }}" alt="">
+    {%- else -%}
+      {%- for src in src_list -%}<img class="image image-dither image--contain w--6 h--6" src="{{ src }}" alt="">{%- endfor -%}
+    {%- endif -%}
+  {%- endcapture -%}
+
+  {%- assign name = e.name | remove: "~~" | remove: "^^" -%}
+  {%- capture row -%}{{ key }}~~{{ name }}~~{{ e.heading }}~~{{ when | strip }}~~{{ tip | strip }}~~{{ imgs }}{%- endcapture -%}
+  {%- if is_active -%}
+    {%- assign active_rows = active_rows | append: row | append: "^^" -%}
+  {%- else -%}
+    {%- assign upcoming_rows = upcoming_rows | append: row | append: "^^" -%}
+  {%- endif -%}
+{%- endfor -%}
+
+{%- assign active = active_rows | split: "^^" | sort -%}
+{%- assign upcoming = upcoming_rows | split: "^^" | sort -%}
+
+{%- comment -%}
+  One event row. Pass `row`; set `compact: true` for one-line tips in short slots.
+{%- endcomment -%}
+{% template event_item %}
+{%- assign f = row | split: "~~" -%}
+<div class="item flex pb--2 w--full">
+  <div class="icon">
+    <div class="flex flex--row flex--center-x flex--center-y w--20 h--12">{{ f[5] }}</div>
+  </div>
+  <div class="content">
+    <span class="title title--small lg:title--base" data-clamp="1">{{ f[1] }}</span>
+    <span class="description" data-clamp="1">{{ f[3] }}{% unless compact %} · {{ f[2] }}{% endunless %}</span>
+    <span class="description" data-clamp="{% if compact %}1{% else %}2{% endif %}"><b>Prep:</b> {{ f[4] }}</span>
+  </div>
+</div>
+{% endtemplate %}
+
+{%- comment -%}
+  Title bar. Pass `title`, `icon` (the Poké Ball data URI) and `trmnl`.
+{%- endcomment -%}
+{% template title_bar %}
+<div class="title_bar">
+  <img class="image image--adaptive" src="{{ icon }}" alt="">
+  <span class="title">{{ title }}</span>
+  <span class="instance">{{ trmnl.plugin_settings.instance_name }}</span>
+</div>
+{% endtemplate %}

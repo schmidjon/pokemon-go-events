@@ -1,0 +1,18 @@
+# Build output: the importable zip is built from src/ (see README)
+*.zip
+_build/
+build/
+dist/
+
+# Local secrets and overrides (never commit)
+.env
+.env.*
+*.local.yml
+secrets.yml
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp

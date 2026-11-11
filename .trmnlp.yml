@@ -1,0 +1,13 @@
+---
+# Local dev config for trmnlp (https://github.com/usetrmnl/trmnlp)
+watch:
+  - src
+custom_fields:
+  horizon_days: 14
+  hide_types: []
+variables:
+  trmnl:
+    user:
+      utc_offset: -14400
+    plugin_settings:
+      instance_name: ""

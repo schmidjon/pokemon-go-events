@@ -1,0 +1,53 @@
+---
+name: Pokémon GO Events
+description: Pokémon GO events with prep tips
+strategy: polling
+polling_verb: get
+polling_url: https://raw.githubusercontent.com/bigfoott/ScrapedDuck/data/events.min.json
+polling_headers: ''
+refresh_interval: 60
+no_screen_padding: 'no'
+dark_mode: 'no'
+static_data: ''
+custom_fields:
+- keyname: about
+  field_type: author_bio
+  name: About This Plugin
+  category: games,calendar
+  email_address: jonathan@jonathanschmid.com
+  learn_more_url: https://leekduck.com/events/
+  description: |-
+    See what's happening in Pokémon GO right now and what's coming up, with a quick prep tip for each event and the Pokémon it features.<br/><br/>
+    Event data comes from <a href="https://leekduck.com/events/">LeekDuck</a> via <a href="https://github.com/bigfoott/ScrapedDuck">ScrapedDuck</a>. Pokémon artwork comes from <a href="https://pokeapi.co/">PokéAPI</a>. No account or API key needed.<br/><br/>
+    Times use the time zone in your TRMNL account settings.<br/><br/>
+    Unofficial fan project. Not affiliated with Niantic, Nintendo, The Pokémon Company, or LeekDuck.
+- keyname: horizon_days
+  field_type: number
+  name: Look-ahead (days)
+  description: How far ahead to list upcoming events.
+  help_text: Between 1 and 60 days.
+  default: 14
+  placeholder: 14
+  min: 1
+  max: 60
+  optional: true
+- keyname: hide_types
+  field_type: select
+  name: Hide event types
+  description: Event types to leave off the screen. Leave empty to show everything.
+  multiple: true
+  optional: true
+  options:
+  - GO Battle League: go-battle-league
+  - Raid Battles (rotations): raid-battles
+  - Raid Hour: raid-hour
+  - Spotlight Hour: pokemon-spotlight-hour
+  - Max Monday: max-mondays
+  - Max Battles: max-battles
+  - GO Pass: go-pass
+  - Twitch Drops: twitch-drops
+  - City Safari: city-safari
+  - Wild Area: wild-area
+  - GO Tour: pokemon-go-tour
+  - Season: season
+  - Research: research

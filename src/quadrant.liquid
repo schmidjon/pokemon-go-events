@@ -1,0 +1,17 @@
+<div class="layout layout--col">
+  <div class="flex flex--col w--full stretch">
+    <div class="flex flex--col flex--left gap--small stretch">
+      <span class="label label--underline">Up next</span>
+      <div class="stretch w--full">
+        <div class="flex flex--col flex--left gap--none w--full" data-overflow="true" data-overflow-max-height="auto" data-overflow-counter="true">
+          {%- for r in upcoming limit: 12 %}
+            {% render "event_item", row: r, compact: true %}
+          {%- else %}
+            <span class="description">No events in the next {{ horizon_days }} days.</span>
+          {%- endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% render "title_bar", title: "Pokémon GO", icon: pokeball, trmnl: trmnl %}
